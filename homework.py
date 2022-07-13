@@ -37,7 +37,7 @@ logger.addHandler(handler)
 
 
 def send_message(bot, message):
-    """"Отправка сообщения в Telegram чат"""
+    """Отправка сообщения в Telegram чат."""
     try:
         bot.send_message(TELEGRAM_CHAT_ID, message)
     except exceptions.SendMessageException:
@@ -49,7 +49,7 @@ def send_message(bot, message):
 
 
 def get_api_answer(current_timestamp):
-    """"Отправка запросf к эндпоинту API-сервиса"""
+    """Отправка запросf к эндпоинту API-сервиса."""
     timestamp = current_timestamp or int(time.time())
     params = {'from_date': timestamp}
     try:
@@ -68,7 +68,7 @@ def get_api_answer(current_timestamp):
 
 
 def check_response(response):
-    """"Проверка ответа API на корректность"""
+    """Проверка ответа API на корректность."""
     try:
         homework_list = response['homeworks']
     except KeyError as error:
@@ -85,7 +85,7 @@ def check_response(response):
 
 
 def parse_status(homework):
-    """"Извлечение из информации о конкретной домашней работе"""
+    """Извлечение из информации о конкретной домашней работе."""
     homework_name = homework.get('homework_name')
     homework_status = homework.get('status')
     if homework_name is None:
@@ -105,7 +105,7 @@ def parse_status(homework):
 
 
 def check_tokens() -> bool:
-    """"Проверка доступности переменных окружения"""
+    """Проверка доступности переменных окружения."""
     return all((PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID))
 
 
