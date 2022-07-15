@@ -80,11 +80,7 @@ def parse_status(homework) -> str:
 
 def check_tokens() -> bool:
     """Проверка доступности переменных окружения."""
-    return all((
-        PRACTICUM_TOKEN,
-        TELEGRAM_TOKEN,
-        consts.TELEGRAM_CHAT_ID
-    ))
+    return all((PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID))
 
 
 def main() -> None:
