@@ -8,7 +8,7 @@ import consts
 from consts import PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID
 from log_func import log_runner
 
-log = log_runner('MyLogger').getChild(__name__)
+logging = log_runner('MyLogger').getChild(__name__)
 
 
 def send_message(bot, message) -> None:
@@ -25,12 +25,12 @@ def get_api_answer(current_timestamp) -> Any:
             consts.ENDPOINT, headers=consts.HEADERS, params=params
         )
     except exceptions.APIAnswerException as error:
-        log.error('Ошибка при запросе к основному API: %s', error)
+        logging.error('Ошибка при запросе к основному API: %s', error)
         raise exceptions.APIAnswerException(
             f'Ошибка при запросе к основному API: {error}'
         )
     if response.status_code != HTTPStatus.OK:
-        log.error(
+        logging.error(
             'Ошибка в работе API кода: %s',
             response.status_code,
             response.text
@@ -90,7 +90,7 @@ def check_tokens() -> bool:
 def main() -> None:
     """Основная логика работы бота."""
     if not check_tokens():
-        log.critical('Отсутствует один или более токен.')
+        logging.critical('Отсутствует один или более токен.')
         raise exceptions.CheсkTokensException(
             'Отсутствует один или более токен.'
         )
@@ -104,10 +104,10 @@ def main() -> None:
             homework = homework_list[0]
             message = parse_status(homework)
             send_message(bot, message)
-            log.info('Сообщение отправлено: %s', message)
+            logging.info('Сообщение отправлено: %s', message)
         except Exception as error:
             message = f'Сбой в работе программы: {error}'
-            log.error('Ошибка: %s', message)
+            logging.error('Ошибка: %s', message)
             send_message(bot, message)
         finally:
             time.sleep(consts.RETRY_TIME)
