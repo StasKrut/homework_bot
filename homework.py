@@ -1,73 +1,47 @@
-import os
+from typing import Any
 import telegram
 from http import HTTPStatus
-from dotenv import load_dotenv
 import requests
-import logging
-import sys
 import time
 import exceptions
+import consts
+from consts import PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID
+from log_func import log_runner
+
+log = log_runner('MyLogger').getChild(__name__)
 
 
-load_dotenv()
-
-PRACTICUM_TOKEN = os.getenv('PRACTICUM_TOKEN')
-TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
-TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
-
-RETRY_TIME = 600
-ENDPOINT = 'https://practicum.yandex.ru/api/user_api/homework_statuses/'
-HEADERS = {'Authorization': f'OAuth {PRACTICUM_TOKEN}'}
-
-
-HOMEWORK_STATUSES = {
-    'approved': 'Работа проверена: ревьюеру всё понравилось. Ура!',
-    'reviewing': 'Работа взята на проверку ревьюером.',
-    'rejected': 'Работа проверена: у ревьюера есть замечания.'
-}
-
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-handler = logging.StreamHandler(sys.stdout)
-formatter = logging.Formatter(
-    '%(asctime)s - %(levelname)s - %(message)s'
-)
-handler.setFormatter(formatter)
-logger.addHandler(handler)
-
-
-def send_message(bot, message):
+def send_message(bot, message) -> None:
     """Отправка сообщения в Telegram чат."""
-    try:
-        bot.send_message(TELEGRAM_CHAT_ID, message)
-    except exceptions.SendMessageException:
-        logger.error('Cбой при отправке сообщения в Telegram')
-        raise exceptions.SendMessageException(
-            'Cбой при отправке сообщения в Telegram'
-        )
-    return
+    bot.send_message(TELEGRAM_CHAT_ID, message)
 
 
-def get_api_answer(current_timestamp):
+def get_api_answer(current_timestamp) -> Any:
     """Отправка запросf к эндпоинту API-сервиса."""
     timestamp = current_timestamp or int(time.time())
     params = {'from_date': timestamp}
     try:
-        response = requests.get(ENDPOINT, headers=HEADERS, params=params)
+        response = requests.get(
+            consts.ENDPOINT, headers=consts.HEADERS, params=params
+        )
     except exceptions.APIAnswerException as error:
-        logger.error(f'Ошибка при запросе к основному API: {error}')
+        log.error('Ошибка при запросе к основному API: %s', error)
         raise exceptions.APIAnswerException(
             f'Ошибка при запросе к основному API: {error}'
         )
     if response.status_code != HTTPStatus.OK:
-        logger.error(f'Ошибка в работе API кода {response.status_code}')
+        log.error(
+            'Ошибка в работе API кода: %s',
+            response.status_code,
+            response.text
+        )
         raise exceptions.APIAnswerException(
             f'Ошибка в работе API кода {response.status_code}'
         )
     return response.json()
 
 
-def check_response(response):
+def check_response(response) -> list:
     """Проверка ответа API на корректность."""
     try:
         homework_list = response['homeworks']
@@ -84,7 +58,7 @@ def check_response(response):
     return homework_list
 
 
-def parse_status(homework):
+def parse_status(homework) -> str:
     """Извлечение из информации о конкретной домашней работе."""
     homework_name = homework.get('homework_name')
     homework_status = homework.get('status')
@@ -96,7 +70,7 @@ def parse_status(homework):
         raise exceptions.ParseStatusException(
             'Отсутствует статус домашней работы'
         )
-    verdict = HOMEWORK_STATUSES[homework_status]
+    verdict = consts.HOMEWORK_STATUSES[homework_status]
     if verdict is None:
         raise exceptions.ParseStatusException(
             'Статус домашней работы неизвестен'
@@ -106,34 +80,37 @@ def parse_status(homework):
 
 def check_tokens() -> bool:
     """Проверка доступности переменных окружения."""
-    return all((PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID))
+    return all((
+        PRACTICUM_TOKEN,
+        TELEGRAM_TOKEN,
+        consts.TELEGRAM_CHAT_ID
+    ))
 
 
-def main():
+def main() -> None:
     """Основная логика работы бота."""
-    bot = telegram.Bot(token=TELEGRAM_TOKEN)
-    current_timestamp = int(time.time())
     if not check_tokens():
-        logger.critical('Отсутствует один или более токен.')
+        log.critical('Отсутствует один или более токен.')
         raise exceptions.CheсkTokensException(
             'Отсутствует один или более токен.'
         )
+    bot = telegram.Bot(token=TELEGRAM_TOKEN)
+    current_timestamp = int(time.time())
     while True:
         try:
             response = get_api_answer(current_timestamp)
             homework_list = check_response(response)
             current_timestamp = response.get('current_date')
-            if len(homework_list) > 0:
-                homework = homework_list[0]
-                message = parse_status(homework)
-                send_message(bot, message)
-                logger.info('Сообщение отправлено')
-            time.sleep(RETRY_TIME)
+            homework = homework_list[0]
+            message = parse_status(homework)
+            send_message(bot, message)
+            log.info('Сообщение отправлено: %s', message)
         except Exception as error:
             message = f'Сбой в работе программы: {error}'
-            logger.error(f'Сбой в работе программы: {error}')
+            log.error('Ошибка: %s', message)
             send_message(bot, message)
-            time.sleep(RETRY_TIME)
+        finally:
+            time.sleep(consts.RETRY_TIME)
 
 
 if __name__ == '__main__':
