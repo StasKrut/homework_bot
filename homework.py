@@ -1,11 +1,20 @@
-from typing import Any
 import telegram
-from http import HTTPStatus
 import requests
 import time
+
+from typing import Any
+from http import HTTPStatus
+
 import exceptions
-import consts
-from consts import PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID
+from consts import (
+    PRACTICUM_TOKEN,
+    TELEGRAM_TOKEN,
+    TELEGRAM_CHAT_ID,
+    HEADERS,
+    RETRY_TIME,
+    ENDPOINT,
+    HOMEWORK_STATUSES
+)
 from log_func import log_runner
 
 logging = log_runner('MyLogger').getChild(__name__)
@@ -22,7 +31,7 @@ def get_api_answer(current_timestamp) -> Any:
     params = {'from_date': timestamp}
     try:
         response = requests.get(
-            consts.ENDPOINT, headers=consts.HEADERS, params=params
+            ENDPOINT, headers=HEADERS, params=params
         )
     except exceptions.APIAnswerException as error:
         logging.error('Ошибка при запросе к основному API: %s', error)
@@ -70,7 +79,7 @@ def parse_status(homework) -> str:
         raise exceptions.ParseStatusException(
             'Отсутствует статус домашней работы'
         )
-    verdict = consts.HOMEWORK_STATUSES[homework_status]
+    verdict = HOMEWORK_STATUSES[homework_status]
     if verdict is None:
         raise exceptions.ParseStatusException(
             'Статус домашней работы неизвестен'
@@ -106,7 +115,7 @@ def main() -> None:
             logging.error('Ошибка: %s', message)
             send_message(bot, message)
         finally:
-            time.sleep(consts.RETRY_TIME)
+            time.sleep(RETRY_TIME)
 
 
 if __name__ == '__main__':
