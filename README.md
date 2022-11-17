@@ -29,5 +29,6 @@ OAuth
 - Запускаем homework.py
 
 
-Автор в рамках учебного курса ЯП Python - разработчик бекенда:
+Автор в рамках учебного курса ЯП Python - Python-разработчик:
+
 ✅ Stanislav Krutskikh
